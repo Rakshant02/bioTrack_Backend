@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36705.20 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BioTrack.Server", "BioTrack.Server\BioTrack.Server.csproj", "{BD87FA03-F42A-442F-872E-C9E7D83540F4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BD87FA03-F42A-442F-872E-C9E7D83540F4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BD87FA03-F42A-442F-872E-C9E7D83540F4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BD87FA03-F42A-442F-872E-C9E7D83540F4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BD87FA03-F42A-442F-872E-C9E7D83540F4}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {67C94121-6C86-4D76-912B-DB9FFDCF5079}
+	EndGlobalSection
+EndGlobal
