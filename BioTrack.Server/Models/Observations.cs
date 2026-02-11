@@ -6,30 +6,44 @@ namespace BioTrack.Server.Models
     public class Observations
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int ObservationID { get; set; }
 
         [Required]
         public int ParticipantID { get; set; }
 
-        // Navigation property to link back to the Participant
-        //[ForeignKey("ParticipantID")]
-        //public virtual Participant? Participant { get; set; }
+        [ForeignKey(nameof(ParticipantID))]
+        public Participants Participant { get; set; }
 
         [Required]
         public DateTime VisitDate { get; set; }
 
-        // --- DataPoints: Vitals ---
+ 
+
+        // DataPoints — Vitals
+        [Column(TypeName = "decimal(5,2)")]
         public decimal BodyTemperature { get; set; }
+
+        [Required]
         public int HeartRate { get; set; }
-        public string? BloodPressure { get; set; } // e.g., "120/80 mmHg"
+
+
+        [MaxLength(20)]
+        [Column(TypeName = "varchar(20)")] // or nvarchar if needed
+        public string? BloodPressure { get; set; }
+
+
+        [Column(TypeName = "decimal(5,2)")]
         public decimal OxygenSaturation { get; set; }
 
-        // --- DataPoints: LabResults ---
-        // Stored as a string/JSON for flexibility or a separate notes field
-        public string? LabResults { get; set; }
+        // Lab results (free text for now)
+        [Required]
+        public int Hemoglobin { get; set; }
 
-        // Metadata for auditing
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+        [Required]
+        public int Creatinine { get; set; }
+
+
+        
     }
 }
-

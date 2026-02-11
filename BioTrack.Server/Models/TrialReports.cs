@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace BioTrack.Server.Models
 {
@@ -7,12 +8,11 @@ namespace BioTrack.Server.Models
         [Key]
         public int ReportID { get; set; }
 
-        // Flattening the Metrics into individual properties
-        [Display(Name = "Enrollment Rate (%)")]
-        public decimal EnrollmentRate { get; set; }
-
-        [Display(Name = "Completion Rate (%)")]
-        public decimal CompletionRate { get; set; }
+        // NEW: tie each report to a protocol (PDF)
+        [Required]
+        public int ProtocolID { get; set; }
+        [ForeignKey(nameof(ProtocolID))]
+        public TrialProtocols TrialProtocol { get; set; }
 
         public DateTime GeneratedDate { get; set; } = DateTime.UtcNow;
     }

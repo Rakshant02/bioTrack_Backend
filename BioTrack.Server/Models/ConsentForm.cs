@@ -11,14 +11,22 @@ namespace BioTrack.Server.Models
         [Required]
         public int ParticipantID { get; set; }
 
-        // Navigation property to the Participant
-        //[ForeignKey("ParticipantID")]
-        //public virtual Participant Participant { get; set; }
+        [ForeignKey(nameof(ParticipantID))]
+        public Participants Participant { get; set; }
 
         public DateTime SignedDate { get; set; }
 
         [Required]
-        public ConsentStatus Status { get; set; }
+        public ConsentStatus Status { get; set; } // SIGNED/WITHDRAWN
+
+        // NEW: Support re‑consent (PDF mentions consent mgmt; amendments imply versions)
+        public int Version { get; set; } = 1;
+
+        // NEW: Optional pointer to stored consent document
+        public string? FileUri { get; set; }
+
+        // Optional: app-level rule – only one active SIGNED at a time
+        public bool IsActive { get; set; } = true;
     }
 
     public enum ConsentStatus
@@ -27,4 +35,3 @@ namespace BioTrack.Server.Models
         WITHDRAWN = 2
     }
 }
-
