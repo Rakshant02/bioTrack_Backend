@@ -1,4 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion.Internal;
 
 namespace BioTrack.Server.Models
 {
@@ -22,5 +24,14 @@ namespace BioTrack.Server.Models
 
         [Required]
         public string Status { get; set; } // e.g., "ACTIVE", "COMPLETED"
+
+        [Column(TypeName = "nvarchar(max)")]
+        public string Objective { get; set; } // Optional detailed description of the trial protocol]
+
+        [Column(TypeName = "nvarchar(max)")]
+        public string InclusionCriteria { get; set; } // Optional detailed inclusion criteria
+
+        [Column(TypeName = "nvarchar(max)")]
+        public String ExclusionCriteria { get; set; } // Optional detailed exclusion criteria
     }
 }

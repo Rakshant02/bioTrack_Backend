@@ -4,9 +4,12 @@ using Microsoft.Extensions.Options;
 
 namespace BioTrack.Server.Data
 {
-    public class BioDataContext(DbContextOptions<BioDataContext> options):DbContext
+    public class BioDataContext : DbContext
     {
-        
+        public BioDataContext(DbContextOptions<BioDataContext> options) : base(options)
+        {
+        }
+
 
         public DbSet<Participants> Participants { get; set; }
         public DbSet<TrialProtocols> TrialsProtocols { get; set; }

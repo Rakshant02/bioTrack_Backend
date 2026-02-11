@@ -8,22 +8,16 @@ namespace BioTrack.Server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class ParticipantsController(BioDataContext context) : ControllerBase
-
-    {
-        private readonly BioDataContext _context;
-
-        // The constructor handles the Dependency Injection
-       
+    public class ParticipantsController : ControllerBase { }
 
 
-        [HttpGet("getAllPartcipants")]
-        public async Task<IActionResult> GetAllParticipants()
-        {
-            var list = await _context.Participants.ToListAsync();
-            return Ok(list);
-        }
 
 
-    }
+
+
+
+
+
+
 }
+
