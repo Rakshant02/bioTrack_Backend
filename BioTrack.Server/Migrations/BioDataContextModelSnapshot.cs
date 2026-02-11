@@ -295,6 +295,12 @@ namespace BioTrack.Server.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ReportID"));
 
+                    b.Property<decimal>("CompletionRate")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("EnrollmentRate")
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<DateTime>("GeneratedDate")
                         .HasColumnType("datetime2");
 
