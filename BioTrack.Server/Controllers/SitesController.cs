@@ -52,5 +52,32 @@ namespace BioTrack.Server.Controllers
 
             return Ok(site);
         }
+
+        [HttpGet("count")]
+        public async Task<IActionResult> GetSiteCount()
+        {
+            var count = await context.StudySites.CountAsync();
+
+            return Ok(new
+            {
+                totalSites = count
+            });
+        }
+
+
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteSite(int id)
+        {
+            var site = await context.StudySites.FindAsync(id);
+
+            if (site == null)
+                return NotFound("Site not found");
+
+            context.StudySites.Remove(site);
+            await context.SaveChangesAsync();
+
+            return Ok("Deleted successfully");
+        }
     }
 }
