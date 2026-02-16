@@ -133,5 +133,32 @@ namespace BioTrack.Server.Controllers
                 return StatusCode(500, "An error occurred while counting study sites.");
             }
         }
+
+        [HttpGet("count")]
+        public async Task<IActionResult> GetSiteCount()
+        {
+            var count = await context.StudySites.CountAsync();
+
+            return Ok(new
+            {
+                totalSites = count
+            });
+        }
+
+
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteSite(int id)
+        {
+            var site = await context.StudySites.FindAsync(id);
+
+            if (site == null)
+                return NotFound("Site not found");
+
+            context.StudySites.Remove(site);
+            await context.SaveChangesAsync();
+
+            return Ok("Deleted successfully");
+        }
     }
 }

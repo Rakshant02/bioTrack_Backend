@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace BioTrack.Server.Models
 {
@@ -14,6 +15,7 @@ namespace BioTrack.Server.Models
         public int ProtocolID { get; set; }
 
         [ForeignKey(nameof(ProtocolID))]
+    
         public TrialProtocols TrialProtocol { get; set; }
 
         [Required]
