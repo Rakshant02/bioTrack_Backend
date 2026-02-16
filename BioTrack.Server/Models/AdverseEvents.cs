@@ -6,16 +6,14 @@ namespace BioTrack.Server.Models
     public class AdverseEvents
     {
         [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int EventID { get; set; }
 
         [Required]
         public int ParticipantID { get; set; }
 
         [ForeignKey(nameof(ParticipantID))]
-        public Participants Participant { get; set; }
-
-        [Required, MaxLength(2000)]
-        public string Description { get; set; } = string.Empty;
+        public Participants? Participant { get; set; } // optional nav
 
         [Required]
         public AdverseEventSeverity Severity { get; set; }
@@ -23,7 +21,20 @@ namespace BioTrack.Server.Models
         [Required]
         public DateTime ReportedDate { get; set; } = DateTime.UtcNow;
 
-        public bool IsRegulatoryReported { get; set; } = false;
+        /// <summary>
+        /// What action(s) were taken in response to the adverse event.
+        /// </summary>
+        [Required]
+        [MaxLength(1000)]
+        public string ActionTaken { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Outcome of the adverse event (e.g., Recovered, Recovering, NotRecovered, Fatal, Unknown).
+        /// You can switch this to an enum later if you prefer a constrained set.
+        /// </summary>
+        [Required]
+        [MaxLength(200)]
+        public string Outcome { get; set; } = string.Empty;
     }
 
     public enum AdverseEventSeverity

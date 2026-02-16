@@ -12,15 +12,15 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace BioTrack.Server.Migrations
 {
     [DbContext(typeof(BioDataContext))]
-    [Migration("20260211110411_Init1")]
-    partial class Init1
+    [Migration("20260213121801_UpdationInSchema")]
+    partial class UpdationInSchema
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.0")
+                .HasAnnotation("ProductVersion", "8.0.0")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -33,13 +33,15 @@ namespace BioTrack.Server.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("EventID"));
 
-                    b.Property<string>("Description")
+                    b.Property<string>("ActionTaken")
                         .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
-                    b.Property<bool>("IsRegulatoryReported")
-                        .HasColumnType("bit");
+                    b.Property<string>("Outcome")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<int>("ParticipantID")
                         .HasColumnType("int");
@@ -66,6 +68,7 @@ namespace BioTrack.Server.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ReportID"));
 
                     b.Property<decimal>("AdherenceRate")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("DeviationCount")
@@ -82,39 +85,6 @@ namespace BioTrack.Server.Migrations
                     b.HasIndex("ProtocolID");
 
                     b.ToTable("ComplianceReports");
-                });
-
-            modelBuilder.Entity("BioTrack.Server.Models.ConsentForm", b =>
-                {
-                    b.Property<int>("ConsentID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ConsentID"));
-
-                    b.Property<string>("FileUri")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("ParticipantID")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("SignedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Version")
-                        .HasColumnType("int");
-
-                    b.HasKey("ConsentID");
-
-                    b.HasIndex("ParticipantID");
-
-                    b.ToTable("ConsentForms");
                 });
 
             modelBuilder.Entity("BioTrack.Server.Models.Observations", b =>
@@ -147,12 +117,17 @@ namespace BioTrack.Server.Migrations
                     b.Property<int>("ParticipantID")
                         .HasColumnType("int");
 
+                    b.Property<int?>("ProtocolID")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("VisitDate")
                         .HasColumnType("datetime2");
 
                     b.HasKey("ObservationID");
 
                     b.HasIndex("ParticipantID");
+
+                    b.HasIndex("ProtocolID");
 
                     b.ToTable("Observations");
                 });
@@ -227,6 +202,76 @@ namespace BioTrack.Server.Migrations
                     b.ToTable("Participants", (string)null);
                 });
 
+            modelBuilder.Entity("BioTrack.Server.Models.ProtocolDeviation", b =>
+                {
+                    b.Property<int>("DeviationId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("DeviationId"));
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<int?>("ObservationID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ParticipantID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProtocolID")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("ReportedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("Severity")
+                        .HasColumnType("int");
+
+                    b.HasKey("DeviationId");
+
+                    b.HasIndex("ObservationID");
+
+                    b.HasIndex("ParticipantID");
+
+                    b.HasIndex("ProtocolID");
+
+                    b.HasIndex("ReportedDate");
+
+                    b.HasIndex("Severity");
+
+                    b.ToTable("ProtocolDeviations", (string)null);
+                });
+
+            modelBuilder.Entity("BioTrack.Server.Models.ResearcherCredentials", b =>
+                {
+                    b.Property<int>("ResearcherId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ResearcherId"));
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("FullName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("PasswordHash")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("ResearcherId");
+
+                    b.ToTable("ResearcherCredentials");
+                });
+
             modelBuilder.Entity("BioTrack.Server.Models.StudySites", b =>
                 {
                     b.Property<int>("SiteID")
@@ -243,10 +288,15 @@ namespace BioTrack.Server.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("PrincipalInvestigatorId")
+                        .HasColumnType("int");
+
                     b.Property<int>("ProtocolID")
                         .HasColumnType("int");
 
                     b.HasKey("SiteID");
+
+                    b.HasIndex("PrincipalInvestigatorId");
 
                     b.HasIndex("ProtocolID");
 
@@ -262,13 +312,23 @@ namespace BioTrack.Server.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ProtocolID"));
 
                     b.Property<decimal>("CompletionRate")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime?>("EndDate")
                         .HasColumnType("datetime2");
 
                     b.Property<decimal>("EnrollmentRate")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
+
+                    b.Property<int?>("LeadResearcherId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Objectives")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
 
                     b.Property<int>("Phase")
                         .HasColumnType("int");
@@ -286,6 +346,8 @@ namespace BioTrack.Server.Migrations
                         .HasColumnType("nvarchar(200)");
 
                     b.HasKey("ProtocolID");
+
+                    b.HasIndex("LeadResearcherId");
 
                     b.ToTable("TrialsProtocols", (string)null);
                 });
@@ -311,6 +373,42 @@ namespace BioTrack.Server.Migrations
                     b.ToTable("TrialsReports");
                 });
 
+            modelBuilder.Entity("ConsentForm", b =>
+                {
+                    b.Property<int>("ConsentID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ConsentID"));
+
+                    b.Property<int>("ParticipantID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.HasKey("ConsentID");
+
+                    b.HasIndex("ParticipantID");
+
+                    b.ToTable("ConsentForms");
+                });
+
+            modelBuilder.Entity("StudySiteResearchers", b =>
+                {
+                    b.Property<int>("SiteID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ResearcherId")
+                        .HasColumnType("int");
+
+                    b.HasKey("SiteID", "ResearcherId");
+
+                    b.HasIndex("ResearcherId");
+
+                    b.ToTable("StudySiteResearchers", (string)null);
+                });
+
             modelBuilder.Entity("BioTrack.Server.Models.AdverseEvents", b =>
                 {
                     b.HasOne("BioTrack.Server.Models.Participants", "Participant")
@@ -333,17 +431,6 @@ namespace BioTrack.Server.Migrations
                     b.Navigation("TrialProtocol");
                 });
 
-            modelBuilder.Entity("BioTrack.Server.Models.ConsentForm", b =>
-                {
-                    b.HasOne("BioTrack.Server.Models.Participants", "Participant")
-                        .WithMany("Consents")
-                        .HasForeignKey("ParticipantID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Participant");
-                });
-
             modelBuilder.Entity("BioTrack.Server.Models.Observations", b =>
                 {
                     b.HasOne("BioTrack.Server.Models.Participants", "Participant")
@@ -352,7 +439,14 @@ namespace BioTrack.Server.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("BioTrack.Server.Models.TrialProtocols", "Protocol")
+                        .WithMany()
+                        .HasForeignKey("ProtocolID")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("Participant");
+
+                    b.Navigation("Protocol");
                 });
 
             modelBuilder.Entity("BioTrack.Server.Models.Participants", b =>
@@ -373,15 +467,59 @@ namespace BioTrack.Server.Migrations
                     b.Navigation("TrialProtocol");
                 });
 
+            modelBuilder.Entity("BioTrack.Server.Models.ProtocolDeviation", b =>
+                {
+                    b.HasOne("BioTrack.Server.Models.Observations", "Observation")
+                        .WithMany()
+                        .HasForeignKey("ObservationID")
+                        .OnDelete(DeleteBehavior.NoAction);
+
+                    b.HasOne("BioTrack.Server.Models.Participants", "Participant")
+                        .WithMany("ProtocolDeviations")
+                        .HasForeignKey("ParticipantID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("BioTrack.Server.Models.TrialProtocols", "TrialProtocol")
+                        .WithMany("ProtocolDeviations")
+                        .HasForeignKey("ProtocolID")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Observation");
+
+                    b.Navigation("Participant");
+
+                    b.Navigation("TrialProtocol");
+                });
+
             modelBuilder.Entity("BioTrack.Server.Models.StudySites", b =>
                 {
+                    b.HasOne("BioTrack.Server.Models.ResearcherCredentials", "PrincipalInvestigator")
+                        .WithMany("PrincipalInvestigatorSites")
+                        .HasForeignKey("PrincipalInvestigatorId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("BioTrack.Server.Models.TrialProtocols", "TrialProtocol")
                         .WithMany("StudySites")
                         .HasForeignKey("ProtocolID")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("PrincipalInvestigator");
+
                     b.Navigation("TrialProtocol");
+                });
+
+            modelBuilder.Entity("BioTrack.Server.Models.TrialProtocols", b =>
+                {
+                    b.HasOne("BioTrack.Server.Models.ResearcherCredentials", "LeadResearcher")
+                        .WithMany("LeadProtocols")
+                        .HasForeignKey("LeadResearcherId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("LeadResearcher");
                 });
 
             modelBuilder.Entity("BioTrack.Server.Models.TrialReports", b =>
@@ -395,6 +533,34 @@ namespace BioTrack.Server.Migrations
                     b.Navigation("TrialProtocol");
                 });
 
+            modelBuilder.Entity("ConsentForm", b =>
+                {
+                    b.HasOne("BioTrack.Server.Models.Participants", "Participant")
+                        .WithMany("Consents")
+                        .HasForeignKey("ParticipantID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Participant");
+                });
+
+            modelBuilder.Entity("StudySiteResearchers", b =>
+                {
+                    b.HasOne("BioTrack.Server.Models.ResearcherCredentials", null)
+                        .WithMany()
+                        .HasForeignKey("ResearcherId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_StudySiteResearchers_ResearcherCredentials_ResearcherId");
+
+                    b.HasOne("BioTrack.Server.Models.StudySites", null)
+                        .WithMany()
+                        .HasForeignKey("SiteID")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_StudySiteResearchers_StudySites_SiteID");
+                });
+
             modelBuilder.Entity("BioTrack.Server.Models.Participants", b =>
                 {
                     b.Navigation("AdverseEvents");
@@ -402,6 +568,15 @@ namespace BioTrack.Server.Migrations
                     b.Navigation("Consents");
 
                     b.Navigation("Observations");
+
+                    b.Navigation("ProtocolDeviations");
+                });
+
+            modelBuilder.Entity("BioTrack.Server.Models.ResearcherCredentials", b =>
+                {
+                    b.Navigation("LeadProtocols");
+
+                    b.Navigation("PrincipalInvestigatorSites");
                 });
 
             modelBuilder.Entity("BioTrack.Server.Models.StudySites", b =>
@@ -414,6 +589,8 @@ namespace BioTrack.Server.Migrations
                     b.Navigation("ComplianceReports");
 
                     b.Navigation("Participants");
+
+                    b.Navigation("ProtocolDeviations");
 
                     b.Navigation("StudySites");
 

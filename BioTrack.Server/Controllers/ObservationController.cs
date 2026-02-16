@@ -26,28 +26,21 @@ namespace BioTrack.Server.Controllers
 
         [HttpGet("getAll")]
         public async Task<ActionResult<IEnumerable<ObservationsReadDto>>> GetAllAsync(
-            [FromQuery] int? participantId,
-            [FromQuery] DateTime? from,
-            [FromQuery] DateTime? to,
-            CancellationToken ct)
+     [FromQuery] int page = 1,
+     [FromQuery] int pageSize = 100,
+     CancellationToken ct = default)
         {
-            if (from.HasValue && to.HasValue && from > to)
-                return BadRequest(new { message = "'from' must be earlier than or equal to 'to'." });
+            if (page <= 0 || pageSize <= 0)
+                return BadRequest(new { message = "page and pageSize must be positive." });
 
             try
             {
-                var query = _db.Observations.AsNoTracking().AsQueryable();
+                var query = _db.Observations.AsNoTracking();
 
-                if (participantId.HasValue)
-                    query = query.Where(o => o.ParticipantID == participantId.Value);
-                if (from.HasValue)
-                    query = query.Where(o => o.VisitDate >= from.Value);
-                if (to.HasValue)
-                    query = query.Where(o => o.VisitDate <= to.Value);
-
-                // ProjectTo translates mapping into SQL SELECT projection
                 var results = await query
                     .OrderByDescending(o => o.VisitDate)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
                     .ProjectTo<ObservationsReadDto>(_mapper.ConfigurationProvider)
                     .ToListAsync(ct);
 
@@ -56,7 +49,7 @@ namespace BioTrack.Server.Controllers
             catch (OperationCanceledException)
             {
                 _logger.LogWarning("GetAllAsync(Observations) canceled by client.");
-                return StatusCode(499); // or use 408 if you prefer standard code
+                return StatusCode(499);
             }
             catch (Exception ex)
             {
@@ -83,6 +76,17 @@ namespace BioTrack.Server.Controllers
 
                 if (!participantExists)
                     return NotFound(new { message = $"Participant {dto.ParticipantID} not found." });
+
+                if (dto.ProtocolID.HasValue)
+                {
+                    bool protocolExists = await _db.TrialsProtocols
+                        .AsNoTracking()
+                        .AnyAsync(p => p.ProtocolID == dto.ProtocolID.Value, ct);
+
+                    if (!protocolExists)
+                        return NotFound(new { message = $"Protocol {dto.ProtocolID.Value} not found." });
+                }
+
 
                 // Map DTO -> Entity
                 var entity = _mapper.Map<Observations>(dto);

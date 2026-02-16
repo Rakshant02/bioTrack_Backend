@@ -5,6 +5,7 @@
 
         public int ObservationID { get; set; }
         public int ParticipantID { get; set; }
+        public int? ProtocolID { get; set; }
         public DateTime VisitDate { get; set; }
         
         public decimal BodyTemperature { get; set; }

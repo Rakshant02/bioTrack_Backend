@@ -6,11 +6,26 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace BioTrack.Server.Migrations
 {
     /// <inheritdoc />
-    public partial class Init : Migration
+    public partial class AddProtocolDeviation : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "ResearcherCredentials",
+                columns: table => new
+                {
+                    ResearcherId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    FullName = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(150)", maxLength: 150, nullable: false),
+                    PasswordHash = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ResearcherCredentials", x => x.ResearcherId);
+                });
+
             migrationBuilder.CreateTable(
                 name: "TrialsProtocols",
                 columns: table => new
@@ -18,7 +33,7 @@ namespace BioTrack.Server.Migrations
                     ProtocolID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
-                    Phase = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Phase = table.Column<int>(type: "int", nullable: false),
                     StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     EndDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     EnrollmentRate = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
@@ -60,11 +75,18 @@ namespace BioTrack.Server.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     ProtocolID = table.Column<int>(type: "int", nullable: false),
                     Location = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    InvestigatorName = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    InvestigatorName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    PrincipalInvestigatorId = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_StudySites", x => x.SiteID);
+                    table.ForeignKey(
+                        name: "FK_StudySites_ResearcherCredentials_PrincipalInvestigatorId",
+                        column: x => x.PrincipalInvestigatorId,
+                        principalTable: "ResearcherCredentials",
+                        principalColumn: "ResearcherId",
+                        onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_StudySites_TrialsProtocols_ProtocolID",
                         column: x => x.ProtocolID,
@@ -103,15 +125,15 @@ namespace BioTrack.Server.Migrations
                     SiteID = table.Column<int>(type: "int", nullable: true),
                     Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     DOB = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    Gender = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Age = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    ContactInfo = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Address = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Gender = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    Age = table.Column<string>(type: "nvarchar(10)", maxLength: 10, nullable: false),
+                    ContactInfo = table.Column<string>(type: "nvarchar(254)", maxLength: 254, nullable: false),
+                    Address = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: false),
                     BloodPressure = table.Column<int>(type: "int", nullable: false),
                     Temperature = table.Column<double>(type: "float", nullable: false),
                     HeartRate = table.Column<int>(type: "int", nullable: false),
-                    EligibilityStatus = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    Status = table.Column<string>(type: "nvarchar(max)", nullable: false)
+                    EligibilityStatus = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -131,16 +153,40 @@ namespace BioTrack.Server.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "StudySiteResearchers",
+                columns: table => new
+                {
+                    SiteID = table.Column<int>(type: "int", nullable: false),
+                    ResearcherId = table.Column<int>(type: "int", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_StudySiteResearchers", x => new { x.SiteID, x.ResearcherId });
+                    table.ForeignKey(
+                        name: "FK_StudySiteResearchers_ResearcherCredentials_ResearcherId",
+                        column: x => x.ResearcherId,
+                        principalTable: "ResearcherCredentials",
+                        principalColumn: "ResearcherId",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_StudySiteResearchers_StudySites_SiteID",
+                        column: x => x.SiteID,
+                        principalTable: "StudySites",
+                        principalColumn: "SiteID",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "AdverseEvents",
                 columns: table => new
                 {
                     EventID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     ParticipantID = table.Column<int>(type: "int", nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: false),
                     Severity = table.Column<int>(type: "int", nullable: false),
                     ReportedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    IsRegulatoryReported = table.Column<bool>(type: "bit", nullable: false)
+                    ActionTaken = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    Outcome = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -184,6 +230,7 @@ namespace BioTrack.Server.Migrations
                     ObservationID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     ParticipantID = table.Column<int>(type: "int", nullable: false),
+                    ProtocolID = table.Column<int>(type: "int", nullable: true),
                     VisitDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     BodyTemperature = table.Column<decimal>(type: "decimal(5,2)", nullable: false),
                     HeartRate = table.Column<int>(type: "int", nullable: false),
@@ -201,6 +248,53 @@ namespace BioTrack.Server.Migrations
                         principalTable: "Participants",
                         principalColumn: "ParticipantID",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_Observations_TrialsProtocols_ProtocolID",
+                        column: x => x.ProtocolID,
+                        principalTable: "TrialsProtocols",
+                        principalColumn: "ProtocolID",
+                        onDelete: ReferentialAction.SetNull);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ProtocolDeviations",
+                columns: table => new
+                {
+                    DeviationId = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    ProtocolID = table.Column<int>(type: "int", nullable: false),
+                    ParticipantID = table.Column<int>(type: "int", nullable: false),
+                    ObservationID = table.Column<int>(type: "int", nullable: true),
+                    Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    Severity = table.Column<int>(type: "int", nullable: false),
+                    ReportedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ParticipantsParticipantID = table.Column<int>(type: "int", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ProtocolDeviations", x => x.DeviationId);
+                    table.ForeignKey(
+                        name: "FK_ProtocolDeviations_Observations_ObservationID",
+                        column: x => x.ObservationID,
+                        principalTable: "Observations",
+                        principalColumn: "ObservationID");
+                    table.ForeignKey(
+                        name: "FK_ProtocolDeviations_Participants_ParticipantID",
+                        column: x => x.ParticipantID,
+                        principalTable: "Participants",
+                        principalColumn: "ParticipantID",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ProtocolDeviations_Participants_ParticipantsParticipantID",
+                        column: x => x.ParticipantsParticipantID,
+                        principalTable: "Participants",
+                        principalColumn: "ParticipantID");
+                    table.ForeignKey(
+                        name: "FK_ProtocolDeviations_TrialsProtocols_ProtocolID",
+                        column: x => x.ProtocolID,
+                        principalTable: "TrialsProtocols",
+                        principalColumn: "ProtocolID",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateIndex(
@@ -224,6 +318,11 @@ namespace BioTrack.Server.Migrations
                 column: "ParticipantID");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Observations_ProtocolID",
+                table: "Observations",
+                column: "ProtocolID");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Participants_ProtocolID",
                 table: "Participants",
                 column: "ProtocolID");
@@ -232,6 +331,46 @@ namespace BioTrack.Server.Migrations
                 name: "IX_Participants_SiteID",
                 table: "Participants",
                 column: "SiteID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProtocolDeviations_ObservationID",
+                table: "ProtocolDeviations",
+                column: "ObservationID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProtocolDeviations_ParticipantID",
+                table: "ProtocolDeviations",
+                column: "ParticipantID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProtocolDeviations_ParticipantsParticipantID",
+                table: "ProtocolDeviations",
+                column: "ParticipantsParticipantID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProtocolDeviations_ProtocolID",
+                table: "ProtocolDeviations",
+                column: "ProtocolID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProtocolDeviations_ReportedDate",
+                table: "ProtocolDeviations",
+                column: "ReportedDate");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ProtocolDeviations_Severity",
+                table: "ProtocolDeviations",
+                column: "Severity");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_StudySiteResearchers_ResearcherId",
+                table: "StudySiteResearchers",
+                column: "ResearcherId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_StudySites_PrincipalInvestigatorId",
+                table: "StudySites",
+                column: "PrincipalInvestigatorId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_StudySites_ProtocolID",
@@ -257,16 +396,25 @@ namespace BioTrack.Server.Migrations
                 name: "ConsentForms");
 
             migrationBuilder.DropTable(
-                name: "Observations");
+                name: "ProtocolDeviations");
+
+            migrationBuilder.DropTable(
+                name: "StudySiteResearchers");
 
             migrationBuilder.DropTable(
                 name: "TrialsReports");
+
+            migrationBuilder.DropTable(
+                name: "Observations");
 
             migrationBuilder.DropTable(
                 name: "Participants");
 
             migrationBuilder.DropTable(
                 name: "StudySites");
+
+            migrationBuilder.DropTable(
+                name: "ResearcherCredentials");
 
             migrationBuilder.DropTable(
                 name: "TrialsProtocols");

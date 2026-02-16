@@ -10,6 +10,7 @@ using AutoMapper;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using AutoMapper.QueryableExtensions;
 
 namespace BioTrack.Server.Controllers
 {
@@ -359,5 +360,79 @@ namespace BioTrack.Server.Controllers
                     new { message = "An unexpected error occurred while retrieving participants by protocol and phase." });
             }
         }
+        
+
+        /// Create/append a consent record for the participant.
+        /// POST /api/participants/{participantId}/consents
+        /// </summary>
+        [HttpPost("{participantId:int}/consents")]
+        public async Task<ActionResult<ReadConsent>> CreateConsent(int participantId, [FromBody] CreateConsent request)
+        {
+            try
+            {
+                // Ensure route & body align (avoid tampering)
+                if (request.ParticipantID != 0 && request.ParticipantID != participantId)
+                {
+                    return BadRequest(new { message = "ParticipantID in body must match the route or be omitted." });
+                }
+
+                // Validate participant exists
+                var exists = await _context.Participants
+                    .AsNoTracking()
+                    .AnyAsync(p => p.ParticipantID == participantId);
+
+                if (!exists)
+                    return NotFound(new { message = $"Participant {participantId} not found." });
+
+                // Map request -> entity (model has only ParticipantID, Status)
+                var consent = _mapper.Map<ConsentForm>(request);
+                consent.ParticipantID = participantId;
+
+                _context.ConsentForms.Add(consent);
+                await _context.SaveChangesAsync();
+
+                var dto = _mapper.Map<ReadConsent>(consent);
+                return CreatedAtAction(nameof(GetConsentHistory), new { participantId }, dto);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { message = "Failed to create consent." });
+            }
+        }
+
+        /// <summary>
+        /// Get consent history for a participant (newest first by ConsentID).
+        /// GET /api/participants/{participantId}/consents
+        /// </summary>
+        [HttpGet("{participantId:int}/consents")]
+        public async Task<ActionResult<IEnumerable<ReadConsent>>> GetConsentHistory(int participantId)
+        {
+            try
+            {
+                // Ensure participant exists
+                var exists = await _context.Participants
+                    .AsNoTracking()
+                    .AnyAsync(p => p.ParticipantID == participantId);
+
+                if (!exists)
+                    return NotFound(new { message = $"Participant {participantId} not found." });
+
+                // Since model has no timestamps/versions, sort by ConsentID (descending)
+                var history = await _context.ConsentForms
+                    .AsNoTracking()
+                    .Where(c => c.ParticipantID == participantId)
+                    .OrderByDescending(c => c.ConsentID)
+                    .ProjectTo<ReadConsent>(_mapper.ConfigurationProvider)
+                    .ToListAsync();
+
+                return Ok(history);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new { message = "Failed to fetch consent history." });
+            }
+
+        }
+
+        }
     }
-}

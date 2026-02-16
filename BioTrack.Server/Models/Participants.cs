@@ -55,8 +55,10 @@ namespace BioTrack.Server.Models
         [Required, MaxLength(20)]
         public string Status { get; set; } = string.Empty; // ENROLLED/WITHDRAWN/COMPLETED
 
+
         public ICollection<ConsentForm> Consents { get; set; } = new List<ConsentForm>();
         public ICollection<Observations> Observations { get; set; } = new List<Observations>();
         public ICollection<AdverseEvents> AdverseEvents { get; set; } = new List<AdverseEvents>();
+        public ICollection<ProtocolDeviation> ProtocolDeviations { get; set; } = new List<ProtocolDeviation>();
     }
 }

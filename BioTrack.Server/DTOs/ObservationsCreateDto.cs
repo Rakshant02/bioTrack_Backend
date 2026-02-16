@@ -7,7 +7,7 @@ namespace BioTrack.Server.DTOs
     {
         [Required]
         public int ParticipantID { get; set; }
-
+        public int? ProtocolID { get; set; }
         [Required]
         public DateTime VisitDate { get; set; }
 

@@ -15,6 +15,12 @@ namespace BioTrack.Server.Models
         [ForeignKey(nameof(ParticipantID))]
         public Participants Participant { get; set; }
 
+        public int? ProtocolID { get; set; }
+        // nullable foreign key (safe)
+        [ForeignKey(nameof(ProtocolID))]
+        public TrialProtocols? Protocol { get; set; }
+
+
         [Required]
         public DateTime VisitDate { get; set; }
 
