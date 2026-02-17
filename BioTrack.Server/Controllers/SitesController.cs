@@ -36,10 +36,8 @@ namespace BioTrack.Server.Controllers
         {
             try
             {
-                // ProjectTo translates to SQL selecting only needed columns
                 var sites = await _db.StudySites
                     .AsNoTracking()
-                    .Include(s => s.PrincipalInvestigator) // still okay; ProjectTo can also handle if you configure projection-only
                     .ProjectTo<StudySiteReadDto>(_mapper.ConfigurationProvider)
                     .ToListAsync();
 
@@ -55,9 +53,18 @@ namespace BioTrack.Server.Controllers
         /// <summary>
         /// Create a study site.
         /// Uses the first available TrialProtocol and matches PI by InvestigatorName (FullName).
+        /// <summary>
+        /// Create a study site under a specific protocol (body only contains location).
+        /// POST: /api/studysites/create/{protocolId}
+        /// </summary>
+        // Controllers/StudySitesController.cs
+
+        /// <summary>
+        /// Create a study site WITHOUT assigning a protocol (body only contains location).
+        /// POST: /api/studysites/create
         /// </summary>
         [HttpPost("create")]
-        public async Task<IActionResult> Create([FromBody] StudySiteCreateDto dto)
+        public async Task<IActionResult> Create([FromBody] StudySiteCreateDto dto, CancellationToken ct)
         {
             if (dto == null)
                 return BadRequest("Request body is required.");
@@ -65,49 +72,22 @@ namespace BioTrack.Server.Controllers
             if (string.IsNullOrWhiteSpace(dto.Location))
                 return BadRequest("Location is required.");
 
-            if (string.IsNullOrWhiteSpace(dto.InvestigatorName))
-                return BadRequest("InvestigatorName is required.");
-
             try
             {
-                // 1) Get a protocol (require one because ProtocolID is [Required])
-                var protocol = await _db.TrialsProtocols
-                    .AsNoTracking()
-                    .OrderBy(p => p.ProtocolID)
-                    .FirstOrDefaultAsync();
-
-                if (protocol == null)
-                    return BadRequest("No TrialProtocol found. Create a protocol before creating a site.");
-
-                // 2) Find PI by FullName (case-insensitive)
-                var normalized = dto.InvestigatorName.Trim().ToLower();
-                var pi = await _db.Set<ResearcherCredentials>()
-                    .FirstOrDefaultAsync(r => r.FullName.ToLower() == normalized);
-
-                if (pi == null)
-                    return NotFound($"No Researcher found with FullName '{dto.InvestigatorName}'. Create the researcher first or use an existing name.");
-
-                // 3) Map DTO -> Entity and set required foreign keys
                 var entity = _mapper.Map<StudySites>(dto);
-                entity.ProtocolID = protocol.ProtocolID;
-                entity.PrincipalInvestigatorId = pi.ResearcherId;
+                entity.ProtocolID = null;
                 entity.Location = dto.Location.Trim();
-                entity.InvestigatorName = dto.InvestigatorName.Trim();
 
                 _db.StudySites.Add(entity);
-                await _db.SaveChangesAsync();
+                await _db.SaveChangesAsync(ct);
 
-                // 4) Load with PI for return, then map to Read DTO
-                await _db.Entry(entity).Reference(s => s.PrincipalInvestigator).LoadAsync();
                 var readDto = _mapper.Map<StudySiteReadDto>(entity);
-
-                // Return 201 with resource
-                return CreatedAtAction(nameof(GetAll), new { id = entity.SiteID }, readDto);
+                return CreatedAtAction(nameof(GetAll), routeValues: null, value: readDto);
             }
             catch (DbUpdateException dbEx)
             {
                 _logger.LogError(dbEx, "DB update error while creating StudySite. payload={@dto}", dto);
-                return BadRequest("Could not create StudySite due to a database constraint. Verify SiteID/identity and foreign keys.");
+                return BadRequest("Could not create StudySite due to a database constraint.");
             }
             catch (Exception ex)
             {
@@ -116,49 +96,8 @@ namespace BioTrack.Server.Controllers
             }
         }
 
-        /// <summary>
-        /// Returns the total number of study sites.
-        /// </summary>
-        [HttpGet("count")]
-        public async Task<IActionResult> CountStudySites()
-        {
-            try
-            {
-                var count = await _db.StudySites.AsNoTracking().CountAsync();
-                return Ok(count);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error while counting StudySites");
-                return StatusCode(500, "An error occurred while counting study sites.");
-            }
-        }
-
-        [HttpGet("count")]
-        public async Task<IActionResult> GetSiteCount()
-        {
-            var count = await context.StudySites.CountAsync();
-
-            return Ok(new
-            {
-                totalSites = count
-            });
-        }
 
 
 
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteSite(int id)
-        {
-            var site = await context.StudySites.FindAsync(id);
-
-            if (site == null)
-                return NotFound("Site not found");
-
-            context.StudySites.Remove(site);
-            await context.SaveChangesAsync();
-
-            return Ok("Deleted successfully");
-        }
     }
 }

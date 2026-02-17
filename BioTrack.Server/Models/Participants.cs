@@ -32,7 +32,7 @@ namespace BioTrack.Server.Models
         public string Gender { get; set; } = string.Empty;
 
         [Required, MaxLength(10)]
-        public string Age { get; set; } = string.Empty;
+        public string Age { get; set; }=string.Empty;
 
         [Required, EmailAddress, MaxLength(254)]
         public string ContactInfo { get; set; } = string.Empty; // <-- nullable

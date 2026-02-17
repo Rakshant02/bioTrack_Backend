@@ -16,6 +16,8 @@ namespace BioTrack.Server.Data
         public DbSet<ConsentForm> ConsentForms { get; set; } = default!;
         public DbSet<AdverseEvents> AdverseEvents { get; set; } = default!;
         public DbSet<ProtocolDeviation> ProtocolDeviations { get; set; } = default!;
+        public DbSet<ResearcherCredentials> ResearcherCredentials { get; set; } = default!;
+        public DbSet<AuditLogs> AuditLogs { get; set; } = default!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -31,7 +33,7 @@ namespace BioTrack.Server.Data
                 .HasOne(s => s.TrialProtocol)
                 .WithMany(tp => tp.StudySites)
                 .HasForeignKey(s => s.ProtocolID)
-                .OnDelete(DeleteBehavior.Cascade);
+                .OnDelete(DeleteBehavior.SetNull);
 
             // TrialProtocol -> Participants (1-n)
             modelBuilder.Entity<Participants>()
@@ -92,36 +94,36 @@ namespace BioTrack.Server.Data
             });
 
             // StudySites -> PrincipalInvestigator (Restrict)
-            modelBuilder.Entity<StudySites>()
-                .HasOne(s => s.PrincipalInvestigator)
-                .WithMany(r => r.PrincipalInvestigatorSites)
-                .HasForeignKey(s => s.PrincipalInvestigatorId)
-                .OnDelete(DeleteBehavior.Restrict);
+            //modelBuilder.Entity<StudySites>()
+            //    .HasOne(s => s.PrincipalInvestigator)
+            //    .WithMany(r => r.PrincipalInvestigatorSites)
+            //    .HasForeignKey(s => s.PrincipalInvestigatorId)
+            //    .OnDelete(DeleteBehavior.Restrict);
 
             // Many-to-Many: StudySites <-> ResearcherCredentials
-            modelBuilder.Entity<StudySites>()
-                .HasMany(s => s.StudySiteResearchers)
-                .WithMany(r => r.CollaboratingSites)
-                .UsingEntity<Dictionary<string, object>>(
-                    "StudySiteResearchers",
-                    right => right
-                        .HasOne<ResearcherCredentials>()
-                        .WithMany()
-                        .HasForeignKey("ResearcherId")
-                        .HasConstraintName("FK_StudySiteResearchers_ResearcherCredentials_ResearcherId")
-                        .OnDelete(DeleteBehavior.Cascade),
-                    left => left
-                        .HasOne<StudySites>()
-                        .WithMany()
-                        .HasForeignKey("SiteID")
-                        .HasConstraintName("FK_StudySiteResearchers_StudySites_SiteID")
-                        .OnDelete(DeleteBehavior.Cascade),
-                    join =>
-                    {
-                        join.ToTable("StudySiteResearchers");
-                        join.HasKey("SiteID", "ResearcherId");
-                        join.HasIndex("ResearcherId");
-                    });
+            //modelBuilder.Entity<StudySites>()
+            //    .HasMany(s => s.StudySiteResearchers)
+            //    .WithMany(r => r.CollaboratingSites)
+            //    .UsingEntity<Dictionary<string, object>>(
+            //        "StudySiteResearchers",
+            //        right => right
+            //            .HasOne<ResearcherCredentials>()
+            //            .WithMany()
+            //            .HasForeignKey("ResearcherId")
+            //            .HasConstraintName("FK_StudySiteResearchers_ResearcherCredentials_ResearcherId")
+            //            .OnDelete(DeleteBehavior.Cascade),
+            //        left => left
+            //            .HasOne<StudySites>()
+            //            .WithMany()
+            //            .HasForeignKey("SiteID")
+            //            .HasConstraintName("FK_StudySiteResearchers_StudySites_SiteID")
+            //            .OnDelete(DeleteBehavior.Cascade),
+            //        join =>
+            //        {
+            //            join.ToTable("StudySiteResearchers");
+            //            join.HasKey("SiteID", "ResearcherId");
+            //            join.HasIndex("ResearcherId");
+            //        });
 
             // ProtocolDeviation enum conversion
             modelBuilder.Entity<ProtocolDeviation>()
@@ -196,15 +198,36 @@ namespace BioTrack.Server.Data
                 .OnDelete(DeleteBehavior.Restrict);
 
             // Ensure existing 1:n TrialProtocol -> StudySites stays
-            modelBuilder.Entity<StudySites>()
-                .HasOne(s => s.TrialProtocol)
-                .WithMany(tp => tp.StudySites)
-                .HasForeignKey(s => s.ProtocolID)
-                .OnDelete(DeleteBehavior.Cascade);
+            //modelBuilder.Entity<StudySites>()
+            //    .HasOne(s => s.TrialProtocol)
+            //    .WithMany(tp => tp.StudySites)
+            //    .HasForeignKey(s => s.ProtocolID)
+            //    .OnDelete(DeleteBehavior.Cascade);
 
             // Helpful index
             modelBuilder.Entity<TrialProtocols>()
                 .HasIndex(tp => tp.LeadResearcherId);
+
+            modelBuilder.Entity<AuditLogs>(b =>
+            {
+                b.ToTable("AuditLogs");
+                b.HasKey(x => x.LogId);
+                b.Property(x => x.Action).IsRequired().HasMaxLength(50);
+                b.Property(x => x.User).HasMaxLength(256);
+                b.Property(x => x.Timestamp);
+            });
+
+            modelBuilder.Entity<ResearcherCredentials>(b =>
+            {
+                b.ToTable("ResearcherCredentials");
+                b.HasKey(r => r.ResearcherId);
+                b.Property(r => r.FullName).IsRequired().HasMaxLength(150);
+                b.Property(r => r.Email).IsRequired().HasMaxLength(150);
+                b.Property(r => r.PasswordHash).IsRequired();
+                b.HasIndex(r => r.Email).IsUnique(); // recommended for login
+            });
+
+
 
         }
     }

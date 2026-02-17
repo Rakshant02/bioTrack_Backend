@@ -16,13 +16,9 @@
         public int? LeadResearcherId { get; set; }
 
         // Option B: create new investigator
-        public CreateResearcherDto? NewInvestigator { get; set; }
+        //public CreateResearcherDto? NewInvestigator { get; set; }
 
         // Optionally create/assign study sites immediately
-        public List<StudySiteCreateDto>? StudySites
-        {
-            get; set;
-
-        }
+        public List<int> StudySiteIds { get; set; } = new();
     }
     }

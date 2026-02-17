@@ -1,11 +1,14 @@
-﻿namespace BioTrack.Server.DTOs
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace BioTrack.Server.DTOs
 {
     public class StudySiteCreateDto
     {
+        // No ProtocolID here anymore
+        [Required]
+        public string Location { get; set; } = default!;
 
-        public int ProtocolID { get; set; }
-        public string Location { get; set; }
-        public string InvestigatorName { get; set; }
-
+        //[Required]
+        //public string InvestigatorName { get; set; } = default!;
     }
 }

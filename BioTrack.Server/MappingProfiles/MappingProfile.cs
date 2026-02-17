@@ -81,18 +81,27 @@ namespace BioTrack.Server.MappingProfiles
                             });
 
 
-            CreateMap<StudySites, StudySiteReadDto>()
-                            .ForMember(dest => dest.PrincipalInvestigator,
-                                       opt => opt.MapFrom(src => src.PrincipalInvestigator));
+            CreateMap<StudySites, StudySiteReadDto>();
+
+
+
+            CreateMap<StudySiteCreateDto, StudySites>()
+                .ForMember(dest => dest.SiteID, opt => opt.Ignore())
+                .ForMember(dest => dest.ProtocolID, opt => opt.Ignore())
+                .ForMember(dest => dest.TrialProtocol, opt => opt.Ignore())
+                // If Participants nav stays, ignore it on creation
+                .ForMember(dest => dest.Participants, opt => opt.Ignore());
+
+
 
 
             CreateMap<ResearcherCredentials, ResearcherMiniDto>();
 
             // Create DTO -> Entity
             // ProtocolID and PrincipalInvestigatorId are set in the controller (business rule)
-            CreateMap<StudySiteCreateDto, StudySites>()
-                .ForMember(dest => dest.ProtocolID, opt => opt.Ignore())
-                .ForMember(dest => dest.PrincipalInvestigatorId, opt => opt.Ignore());
+            //CreateMap<StudySiteCreateDto, StudySites>()
+            //    .ForMember(dest => dest.ProtocolID, opt => opt.Ignore())
+            //    .ForMember(dest => dest.PrincipalInvestigatorId, opt => opt.Ignore());
         
         // Entity -> Read DTO
         CreateMap<ProtocolDeviation, ReadProtocolDeviation>();
@@ -151,37 +160,41 @@ CreateMap<UpdateProtocolDeviation, ProtocolDeviation>()
                 .ForMember(dest => dest.ResearcherId, opt => opt.Ignore())
                 .ForMember(dest => dest.PasswordHash, opt => opt.Ignore()) // set later
                                                                            // Avoid attaching navs from DTO during creation:
-                .ForMember(dest => dest.PrincipalInvestigatorSites, opt => opt.Ignore())
-                .ForMember(dest => dest.CollaboratingSites, opt => opt.Ignore())
+                //.ForMember(dest => dest.PrincipalInvestigatorSites, opt => opt.Ignore())
+                //.ForMember(dest => dest.CollaboratingSites, opt => opt.Ignore())
                 .ForMember(dest => dest.LeadProtocols, opt => opt.Ignore());
 
             CreateMap<TrialProtocols, ReadProtocolDto>()
-                            .ForMember(d => d.LeadResearcher, opt => opt.MapFrom(src =>
-                                src.LeadResearcher == null
-                                    ? null
-                                    : new ResearcherMiniDto
-                                    {
-                                        ResearcherId = src.LeadResearcherId!.Value,
-                                        FullName = src.LeadResearcher.FullName,   // adjust to your actual property names
-                                        Email = src.LeadResearcher.Email
-                                    }))
-                            .ForMember(d => d.StudySiteCount, opt => opt.MapFrom(s => s.StudySites.Count))
-                            .ForMember(d => d.ParticipantCount, opt => opt.MapFrom(s => s.Participants.Count))
-                            .ForMember(d => d.ComplianceReportCount, opt => opt.MapFrom(s => s.ComplianceReports.Count))
-                            .ForMember(d => d.TrialReportCount, opt => opt.MapFrom(s => s.TrialReports.Count))
-                            .ForMember(d => d.ProtocolDeviationCount, opt => opt.MapFrom(s => s.ProtocolDeviations.Count))
-                            // Map related IDs (adjust key names if different in your models)
-                            .ForMember(d => d.StudySiteIds, opt => opt.MapFrom(s => s.StudySites.Select(x => x.SiteID)))
-                            .ForMember(d => d.ParticipantIds, opt => opt.MapFrom(s => s.Participants.Select(x => x.ParticipantID)))
-                            .ForMember(d => d.ComplianceReportIds, opt => opt.MapFrom(s => s.ComplianceReports.Select(x => x.ReportID)))
-                            .ForMember(d => d.TrialReportIds, opt => opt.MapFrom(s => s.TrialReports.Select(x => x.ReportID)))
-                            .ForMember(d => d.ProtocolDeviationIds, opt => opt.MapFrom(s => s.ProtocolDeviations.Select(x => x.DeviationId)));
+     .ForMember(d => d.LeadResearcher, opt => opt.MapFrom(src =>
+         src.LeadResearcher == null
+             ? null
+             : new ResearcherMiniDto
+             {
+                 ResearcherId = src.LeadResearcherId!.Value,
+                 FullName = src.LeadResearcher.FullName,
+                 Email = src.LeadResearcher.Email
+             }))
+     .ForMember(d => d.StudySiteCount, opt => opt.MapFrom(s => s.StudySites.Count))
+     .ForMember(d => d.ParticipantCount, opt => opt.MapFrom(s => s.Participants.Count))
+     .ForMember(d => d.ComplianceReportCount, opt => opt.MapFrom(s => s.ComplianceReports.Count))
+     .ForMember(d => d.TrialReportCount, opt => opt.MapFrom(s => s.TrialReports.Count))
+     .ForMember(d => d.ProtocolDeviationCount, opt => opt.MapFrom(s => s.ProtocolDeviations.Count))
+
+     // ⬇️ Add this line:
+     .ForMember(d => d.StudySites, opt => opt.MapFrom(s => s.StudySites))
+
+     // (Optional) Keep IDs too
+     .ForMember(d => d.StudySiteIds, opt => opt.MapFrom(s => s.StudySites.Select(x => x.SiteID)))
+     .ForMember(d => d.ParticipantIds, opt => opt.MapFrom(s => s.Participants.Select(x => x.ParticipantID)))
+     .ForMember(d => d.ComplianceReportIds, opt => opt.MapFrom(s => s.ComplianceReports.Select(x => x.ReportID)))
+     .ForMember(d => d.TrialReportIds, opt => opt.MapFrom(s => s.TrialReports.Select(x => x.ReportID)))
+     .ForMember(d => d.ProtocolDeviationIds, opt => opt.MapFrom(s => s.ProtocolDeviations.Select(x => x.DeviationId)));
 
             // Create DTO -> Model
+            // Create DTO -> Model (scalar-only; relations handled in controller)
             CreateMap<CreateProtocolDto, TrialProtocols>()
                 .ForMember(d => d.ProtocolID, opt => opt.Ignore())
                 .ForMember(d => d.LeadResearcherId, opt => opt.MapFrom(s => s.LeadResearcherId))
-                // Collections handled in the service layer when attaching existing entities
                 .ForMember(d => d.StudySites, opt => opt.Ignore())
                 .ForMember(d => d.Participants, opt => opt.Ignore())
                 .ForMember(d => d.ComplianceReports, opt => opt.Ignore())

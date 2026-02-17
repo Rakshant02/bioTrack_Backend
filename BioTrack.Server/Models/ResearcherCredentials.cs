@@ -22,10 +22,10 @@ namespace BioTrack.Server.Models
         public string PasswordHash { get; set; }
 
         // Reverse navigation for sites where this researcher is the PI (1 : many)
-        public ICollection<StudySites> PrincipalInvestigatorSites { get; set; } = new List<StudySites>();
+        //public ICollection<StudySites> PrincipalInvestigatorSites { get; set; } = new List<StudySites>();
 
         // Many-to-many: sites where this researcher collaborates
-        public ICollection<StudySites> CollaboratingSites { get; set; } = new List<StudySites>();
+        //public ICollection<StudySites> CollaboratingSites { get; set; } = new List<StudySites>();
         public ICollection<TrialProtocols> LeadProtocols { get; set; } = new List<TrialProtocols>();    
     }
 }

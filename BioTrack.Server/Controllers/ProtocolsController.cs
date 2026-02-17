@@ -65,78 +65,89 @@ namespace BioTrack.Server.Controllers
                 if (!ModelState.IsValid)
                     return ValidationProblem(ModelState);
 
-                // Disallow ambiguous input (both provided)
-                if (request.LeadResearcherId.HasValue && request.NewInvestigator != null)
-                    return BadRequest(new { message = "Provide either LeadResearcherId or NewInvestigator, not both." });
+                if (request.EndDate.HasValue && request.EndDate.Value < request.StartDate)
+                    return BadRequest(new { message = "EndDate cannot be earlier than StartDate." });
 
                 await using var tx = await _db.Database.BeginTransactionAsync(ct);
 
-                // Resolve leadResearcherId: either use existing, or create a new investigator
+                // 1) Validate LeadResearcherId (existing only)
                 int? leadResearcherId = request.LeadResearcherId;
-
-                if (request.NewInvestigator != null)
+                if (leadResearcherId.HasValue)
                 {
-                    // prevent duplicate email
-                    var emailExists = await _db.Set<ResearcherCredentials>()
-                        .AsNoTracking()
-                        .AnyAsync(r => r.Email == request.NewInvestigator.Email, ct);
-
-                    if (emailExists)
-                        return Conflict(new { message = "Investigator with this email already exists. Use LeadResearcherId instead." });
-
-                    var newR = _mapper.Map<ResearcherCredentials>(request.NewInvestigator);
-                    // Your mapping ignores PasswordHash and your model requires it => set to empty
-                    newR.PasswordHash = string.Empty;
-
-                    _db.Add(newR);
-                    await _db.SaveChangesAsync(ct);
-                    leadResearcherId = newR.ResearcherId;
-                }
-                else if (leadResearcherId.HasValue)
-                {
-                    var exists = await _db.Set<ResearcherCredentials>()
+                    var leadExists = await _db.Set<ResearcherCredentials>()
                         .AsNoTracking()
                         .AnyAsync(r => r.ResearcherId == leadResearcherId.Value, ct);
-                    if (!exists)
+
+                    if (!leadExists)
                         return NotFound(new { message = $"Lead researcher {leadResearcherId.Value} not found." });
                 }
 
-                // Create protocol
+                // 2) Validate and load StudySites (existing only)
+
+                var siteIds = (request.StudySiteIds ?? new List<int>()).Distinct().ToList();
+                var sitesToAssign = new List<StudySites>();
+
+                if (siteIds.Count > 0)
+                {
+                    sitesToAssign = await _db.StudySites
+                        .Where(s => siteIds.Contains(s.SiteID))
+                        .ToListAsync(ct);
+
+                    var missing = siteIds.Except(sitesToAssign.Select(s => s.SiteID)).ToList();
+                    if (missing.Count > 0)
+                    {
+                        return NotFound(new
+                        {
+                            message = "One or more StudySites do not exist.",
+                            missingSiteIds = missing
+                        });
+                    }
+
+                    // OPTIONAL: if you want to forbid reassignment, use this block:
+                    // var alreadyAttached = sitesToAssign
+                    //     .Where(s => s.ProtocolID.HasValue)
+                    //     .Select(s => new { s.SiteID, s.ProtocolID })
+                    //     .ToList();
+                    // if (alreadyAttached.Count > 0)
+                    // {
+                    //     return Conflict(new
+                    //     {
+                    //         message = "Some StudySites are already linked to another protocol. Reassignment is not allowed.",
+                    //         sites = alreadyAttached
+                    //     });
+                    // }
+                }
+
+
+                // 3) Create Protocol (scalar-only)
+
                 var protocol = _mapper.Map<TrialProtocols>(request);
                 protocol.LeadResearcherId = leadResearcherId;
 
                 _db.TrialsProtocols.Add(protocol);
                 await _db.SaveChangesAsync(ct); // obtain ProtocolID
 
-                // Attach study sites (if any)
-                if (request.StudySites != null && request.StudySites.Count > 0)
+                // Assign existing StudySites to this protocol (reassign allowed)
+                if (sitesToAssign.Count > 0)
                 {
-                    // Because StudySites.PrincipalInvestigatorId is REQUIRED and StudySiteCreateDto lacks this,
-                    // we default PI to the protocol's LeadResearcherId. If none, we cannot continue.
-                    if (!leadResearcherId.HasValue)
-                        return BadRequest(new { message = "To create study sites during protocol creation, provide a LeadResearcher (or add PrincipalInvestigatorId to StudySiteCreateDto)." });
-
-                    foreach (var siteDto in request.StudySites)
+                    foreach (var site in sitesToAssign)
                     {
-                        var site = _mapper.Map<StudySites>(siteDto);
-
-                        // Enforce protocol linkage & required PI
-                        site.ProtocolID = protocol.ProtocolID;
-                        site.PrincipalInvestigatorId = leadResearcherId.Value;
-
-                        _db.StudySites.Add(site);
+                        site.ProtocolID = protocol.ProtocolID; // assign/reassign to new protocol
                     }
-
                     await _db.SaveChangesAsync(ct);
                 }
 
+
                 await tx.CommitAsync(ct);
 
-                // 201 Created with Location header
                 return CreatedAtAction(
                     nameof(GetById),
                     new { id = protocol.ProtocolID },
                     new { message = "Protocol created successfully", protocolId = protocol.ProtocolID });
+            }
+            catch (DbUpdateException)
+            {
+                return StatusCode(500, new { message = "Database error while creating protocol." });
             }
             catch
             {

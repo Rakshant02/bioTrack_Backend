@@ -8,5 +8,6 @@ namespace BioTrack.Server.Controllers
     public class ConsentFormController : ControllerBase
     {
 
+
     }
 }

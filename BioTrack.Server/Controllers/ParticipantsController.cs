@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using AutoMapper.QueryableExtensions;
+using Microsoft.AspNetCore.Authorization;
 
 namespace BioTrack.Server.Controllers
 {
@@ -360,11 +361,13 @@ namespace BioTrack.Server.Controllers
                     new { message = "An unexpected error occurred while retrieving participants by protocol and phase." });
             }
         }
-        
+
 
         /// Create/append a consent record for the participant.
         /// POST /api/participants/{participantId}/consents
         /// </summary>
+        /// 
+    
         [HttpPost("{participantId:int}/consents")]
         public async Task<ActionResult<ReadConsent>> CreateConsent(int participantId, [FromBody] CreateConsent request)
         {

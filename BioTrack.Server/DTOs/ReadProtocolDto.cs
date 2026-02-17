@@ -27,6 +27,7 @@
         public List<int> ComplianceReportIds { get; set; } = new();
         public List<int> TrialReportIds { get; set; } = new();
         public List<int> ProtocolDeviationIds { get; set; } = new();
+        public List<StudySiteReadDto> StudySites { get; set; } = new();
 
     }
 }
